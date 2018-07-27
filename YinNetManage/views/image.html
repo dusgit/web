@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<%- include mod_head.html %>
+	<title>管理后台欢迎页面</title>
+	<script language="javascript" type="text/javascript" src="/My97DatePicker/WdatePicker.js"></script>
+	<link href="/My97DatePicker/skin/WdatePicker.css" rel="stylesheet" type="text/css">
+</head>
+<body>
+	<div>
+		<div class="top_area">
+			<%- include mod_top.html %>
+		</div>
+		<div class="bom_area">
+			<div class="nav_menu_area">
+				<%- include mod_menu.html %>
+			</div>
+			<div class="work_area" id="work_area">
+				用户管理页面
+			</div>
+		</div>
+	</div>
+	<%- include mod_template.html %>
+	<div id="pop_add" style="display:none;">
+		<ul class="pop_edt_ul">
+			<li>
+				<span class="pop_edt_sp img_pop_edt_sp" style="width: 100%">上传图片(大小不超过500KB)</span>
+				<form method="post" action="http://upload.qiniup.com/" enctype="multipart/form-data" id="pop_add_uploadImgForm" style="margin-left: 60px">
+					<input id="pop_add_uploadImgKey" name="key" type="hidden">
+					<input id="pop_add_uploadImgToken" name="token" type="hidden">
+					<input id="pop_add_uploadImgfile" name="file" type="file" style="line-height: 0;margin-top: 15px" onchange="uploadImg('add')" />
+					<input id="pop_add_uploadImgSubmit" type="submit" style="display: none;" />
+				</form>
+			</li>
+			<img src="" id="pop_add_uploadImg" onload="loadImage('add')">
+			<li><span class="pop_edt_sp img_pop_edt_sp">图片名称</span><input type="text" class="pop_edt_ipt" id="pop_add_name" /></li>
+			<li><span class="pop_edt_sp img_pop_edt_sp">图片类型</span>
+				<select class="pop_edt_ipt" id="pop_add_type">
+				</select>
+			</li>
+		</ul>
+		<div style="text-align:center;margin-top:20px;">
+			<button onclick="addSave()" id="pop_add_btn" class="pop_edt_btn">保&nbsp;&nbsp;&nbsp;&nbsp;存</button>
+		</div>
+	</div>
+	<div id="pop_edit" style="display:none;">
+		<ul class="pop_edt_ul">
+			<input type="hidden" name="id" id="pop_edt_id">
+			<li>
+				<span class="pop_edt_sp img_pop_edt_sp" style="width: 100%">上传图片(大小不超过500KB)</span>
+				<form method="post" action="http://upload.qiniup.com/" enctype="multipart/form-data" id="pop_edt_uploadImgForm" style="margin-left: 60px">
+					<input id="pop_edt_uploadImgKey" name="key" type="hidden">
+					<input id="pop_edt_uploadImgToken" name="token" type="hidden">
+					<input id="pop_edt_uploadImgfile" name="file" type="file" style="line-height: 0;margin-top: 15px" onchange="uploadImg('edt')" />
+					<input id="pop_edt_uploadImgSubmit" type="submit" style="display: none;" />
+				</form>
+			</li>
+			<img src="" id="pop_edt_uploadImg" onload="loadImage('edt')">
+			<li><span class="pop_edt_sp img_pop_edt_sp">图片名称</span><input type="text" class="pop_edt_ipt" id="pop_edt_name" /></li>
+			<li><span class="pop_edt_sp img_pop_edt_sp">图片类型</span>
+				<select class="pop_edt_ipt" id="pop_edt_type">
+						<option value="0">请选择</option>
+						<option value="1" selected>文章图片</option>
+						<option value="99">其他图片</option>
+				</select>
+			</li>
+		</ul>
+		<div style="text-align:center;margin-top:20px;">
+			<button onclick="editSave()" id="pop_edt_btn" class="pop_edt_btn">保&nbsp;&nbsp;&nbsp;&nbsp;存</button>
+		</div>
+	</div>
+</body>
+<script type="text/javascript">
+var opts = {
+	fields:[
+		{
+			name  : '图片id',field : 'id',query : false,type  : 'hidden'
+		},{
+			name  : '图片',field : 'url',query : false,type  : 'image'
+		},
+		{
+			name  : '图片名称',field : 'name',query : true,type  : 'input'
+		},
+		{
+			name  : '图片地址',field : 'url',query : false,type  : 'input'
+		},
+		{
+			name  : '图片类型',field : 'type',query : true,type  : 'select',
+			dict  : getDictType()
+		},
+		{
+			name  : '创建时间',field : 'createTime',query : false,type  : 'time'
+		}
+	],
+	query_btns:[{name:'查询',click:'findListPage',power:'net_image:list'},{name:'新增',click:'add',power:'net_image:save'}],
+	action_btns:[
+		{name:'编辑',click:'edit',power:'net_image:update'},
+		{name:'删除',click:'deleteImage',power:'net_image:delete'}
+	]
+}
+
+$(document).ready(function(){
+	initTemplate(opts);
+	findListPage();
+});
+
+function findListPage(currentPage){
+	var data = getQueryParam();
+	data['currentPage'] = currentPage || 1;
+	$.ajax({
+		url:'/yinrun/findImageListPage?t='+Date.now(),
+		type:'get',
+		data:data,
+		success:function(res){
+			res = JSON.parse(res);
+			if(res.status == 'success'){
+				showTemplate(opts,res.results,findListPage);
+			}else{
+				showTip(res.message);
+			}
+		}
+	});
+}
+function loadImage(type){
+	var src = $("#pop_"+type+"_uploadImg").attr("src");
+	if (src == "/images/wait.gif" || src == "") {
+		return;
+	}
+	var w = $("#pop_"+type+"_uploadImg").css("width").replace("px","");
+	if (w > 480) {
+		$("#pop_"+type+"_uploadImg").css("width","480px")
+	}
+}
+function uploadImg(type){
+	var obj = document.getElementById("pop_"+type+"_uploadImgfile") ; 
+	var imgSize = obj.files[0].size;
+	if (imgSize > 512000) {
+		showTip('图片大小超过500KB，无法上传');
+		obj.outerHTML=obj.outerHTML; 
+		return;
+	}
+	$("#pop_"+type+"_uploadImg").attr("src","/images/wait.gif").css({
+		"height":"200px",
+		"margin-top":"10px",
+		"margin-left":"60px"
+	});;
+	var fileName = $("#pop_"+type+"_uploadImgfile")["0"].files[0].name.slice(0,$("#pop_"+type+"_uploadImgfile")["0"].files[0].name.indexOf(".")),
+		currTime = new Date().getTime(),
+		fileForm = $("#pop_"+type+"_uploadImgForm");
+	$("#pop_"+type+"_uploadImgForm").submit(function (event) {
+		event.preventDefault();
+		var form = $(this);
+		var formData = new FormData(this);
+		$.ajax({
+			type: form.attr('method'),
+			url: form.attr('action'),
+			data: formData,
+			mimeType: "multipart/form-data",
+			contentType: false,
+			cache: false,
+			processData: false,
+			success:function(res){
+				$("#pop_"+type+"_uploadImg").attr("src","http://img.hp365.com/"+$("#pop_"+type+"_uploadImgKey").val());
+			}
+		})
+	});
+	$("#pop_"+type+"_uploadImgKey").val(fileName + "_" + currTime);
+	$.ajax({
+		url:'/yinrun/uploadImg',
+		type:'get',
+		success:function(res){
+			res = JSON.parse(res);
+			if(res.status == 'success'){
+				$("#pop_"+type+"_uploadImgToken").val(res.results.uptoken);
+				$("#pop_"+type+"_uploadImgSubmit").click();
+			}else{
+				showTip(res.message);
+			}
+		}
+	})
+}
+
+function getDictType(){
+	var typeList = [{key:'',value:'请选择'}];
+	$.ajax({
+		url:'/yinrun/findDictListPage',
+		async:false,
+		type:'get',
+		data:{type:'image'},
+		success:function(res){
+			res = JSON.parse(res);
+			res.results && res.results.list && res.results.list.forEach(function(ele){
+				typeList.push({
+					key:ele.code,
+					value : ele.content
+				});
+			});
+		}
+	});
+	return typeList;
+}
+
+function add(){
+	var pop_add = $('body').data('pop_add');
+	if(!pop_add){
+		$('body').data('pop_add',$('#pop_add').html());
+	}else{
+		$('#pop_add').html($('body').data('pop_add'));
+	}
+	var opts={
+		width:600,
+		height:600,
+		title:'新增图片基本信息',
+		html:$('#pop_add').html()
+	}
+	showPopWindow(opts,function(){
+		var dictTypeList = getDictType();
+		var dictHtml = '';
+		dictTypeList.forEach(function(ele){
+			dictHtml += '<option value="'+ele.key+'">'+ele.value+'</option>';
+		});
+		$('#pop_add').html('');
+		$('#pop_add_type').html(dictHtml);
+	});
+	
+}
+
+function addSave(){
+	var uploadImgUrl = $('#pop_add_uploadImg').attr("src");
+	var name = $('#pop_add_name').val();
+	var type = $('#pop_add_type').val();
+	var waitImgUrl = "wait.gif";
+	if(!uploadImgUrl || uploadImgUrl.substring(uploadImgUrl.lastIndexOf("/")+1) === waitImgUrl){
+		showTip('你还未上传图片或图片正在上传中');
+		return;
+	}
+	if(!type){
+		showTip('图片类型不能为空');
+		return;
+	}
+	var data = {
+		url : uploadImgUrl,
+		type : type,
+		name : name 
+	}
+	$('#pop_add_btn').attr('disabled',true); 
+	$('#pop_add_btn').addClass('btn_invalid');
+	var actionName = 'image_save';
+	if(isActionLock(actionName)){
+		return;
+	}
+	lockAction(actionName);
+	$.ajax({
+		url:'/yinrun/addImage',
+		type:'post',
+		data:data,
+		success:function(res){
+			res = JSON.parse(res);
+			if(res.status == 'success'){
+				showTip('保存成功');
+				findListPage(template.page.currentPage||1);
+				$('#pop_add_btn').attr('disabled',false); 
+				$('#pop_add_btn').removeClass('btn_invalid');
+				closePopWindow();
+			}else{
+				showTip(res.message||'保存失败');
+			}
+			unlockAction(actionName);
+		}
+	});
+}
+
+function edit(id){
+	var ele = getDataById(id);
+	var pop_edit = $('body').data('pop_edit');
+	if(!pop_edit){
+		$('body').data('pop_edit',$('#pop_edit').html());
+	}else{
+		$('#pop_edit').html($('body').data('pop_edit'));
+	}
+	var opts={
+		width:600,
+		height:600,
+		title:'编辑图片基本信息',
+		html:$('#pop_edit').html()
+	}
+	showPopWindow(opts,function(){
+		var dictTypeList = getDictType();
+		var dictHtml = '';
+		dictTypeList.forEach(function(element){
+			dictHtml += '<option value="'+element.key+'">'+element.value+'</option>';
+		});
+		$('#pop_edit').html('');
+		$('#pop_edt_type').html(dictHtml);
+		//设置值
+		$('#pop_edt_uploadImg').attr("src",ele['url'] || '');
+		if ($('#pop_edt_uploadImg').attr("src")) {
+			$("#pop_edt_uploadImg").css({
+				"height":"200px",
+				"margin-top":"10px",
+				"margin-left":"60px"
+			})
+		}
+		$('#pop_edt_id').val(ele['id'] || '');
+		$('#pop_edt_type').val(ele['type']);
+		$('#pop_edt_name').val(ele['name'] || '');
+	});
+}
+
+function editSave(){
+	var uploadImgUrl = $('#pop_edt_uploadImg').attr("src");
+	var type = $('#pop_edt_type').val();
+	var name = $('#pop_edt_name').val();
+	var id = $("#pop_edt_id").val();
+	var waitImgUrl = "wait.gif";
+	if(!uploadImgUrl || uploadImgUrl.substring(uploadImgUrl.lastIndexOf("/")+1) === waitImgUrl){
+		showTip('你还未上传图片或图片正在上传中');
+		return;
+	}
+	if(!type){
+		showTip('图片类型不能为空');
+		return;
+	}
+	var data = {
+		id : id,
+		url : uploadImgUrl,
+		type : type,
+		name : name 
+	}
+	$('#pop_edt_btn').attr('disabled',true); 
+	$('#pop_edt_btn').addClass('btn_invalid');
+	$.ajax({
+		url:'/yinrun/updateImage',
+		type:'post',
+		data:data,
+		success:function(res){
+			res = JSON.parse(res);
+			if(res.status == 'success'){
+				showTip('保存成功');
+				findListPage(template.page.currentPage||1);
+				$('#pop_edt_btn').attr('disabled',false); 
+				$('#pop_edt_btn').removeClass('btn_invalid');
+				closePopWindow(1000);
+			}else{
+				showTip(res.message||'保存失败');
+			}
+		}
+	});
+}
+
+function deleteImage(id){
+	if(!id){
+		showTip('删除id不能为空');
+		return;
+	}
+	showConfirm('确定要删除吗?',function(){
+		$.ajax({
+			url:'/yinrun/deleteImage',
+			type:'post',
+			data:{id:id},
+			success:function(res){
+				res = JSON.parse(res);
+				if(res.status == 'success'){
+					showTip('删除成功');
+					findListPage(template.page.currentPage||1);
+					$('#pop_edt_btn').attr('disabled',false); 
+					$('#pop_edt_btn').removeClass('btn_invalid');
+				}else{
+					showTip(res.message||'删除失败');
+				}
+			}
+		});
+	});
+}
+</script>
+</html>

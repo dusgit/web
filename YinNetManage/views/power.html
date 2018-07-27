@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<%- include mod_head.html %>
+		<title>管理后台欢迎页面</title>
+</head>
+<body>
+	<div>
+		<div class="top_area">
+			<%- include mod_top.html %>
+		</div>
+		<div class="bom_area">
+			<div class="nav_menu_area">
+				<%- include mod_menu.html %>
+			</div>
+			<div class="work_area" id="work_area">
+				权限管理页面
+			</div>
+		</div>
+	</div>
+	<%- include mod_template.html %>
+</body>
+<script type="text/javascript">
+var opts = {
+	fields:[
+		{
+			name  : '权限id',field : 'id',query : false,type  : 'hidden'
+		},{
+			name  : '权限名称',field : 'name',query : true,type  : 'input'
+		},{
+			name  : '权限编码',field : 'code',query : true,type  : 'input'
+		},{
+			name  : '权限类型',field : 'type',query : true,type  : 'select',
+			dict  : [{key:'',value:'请选择'},{key:'1',value:'菜单'},{key:'2',value:'按钮'},{key:'3',value:'资源'}]
+		},{
+			name  : '资源地址',field : 'power',query : true,type  : 'input'
+		}
+	],
+	query_btns:[{name:'查询',click:'findListPage',power:'sys_power:list'}],
+	action_btns:[]
+}
+$(document).ready(function(){
+	initTemplate(opts);
+	findListPage();
+});
+function findListPage(currentPage){
+	var data = getQueryParam();
+	data['currentPage'] = currentPage || 1;
+	$.ajax({
+		url:'/yinrun/findPowerListPage?t='+Date.now(),
+		type:'get',
+		data:data,
+		success:function(res){
+			res = JSON.parse(res);
+			if(res.status == 'success'){
+				showTemplate(opts,res.results,findListPage);
+			}else{
+				showTip(res.message);
+			}
+		}
+	});
+}
+
+</script>
+</html>

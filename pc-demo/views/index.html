@@ -1,0 +1,95 @@
+<!DOCTYPE>
+<html>
+    <head>
+        <%include head.html %>
+        <title>index</title>
+		<style rel="stylesheet" type="text/css">
+			.b1{
+				border:1px solid #ddd;
+			}
+			.bg1{
+				background-color:#eee;
+			}
+			.nav{
+				position:fixed;
+				top:0px;
+				height:70px;
+				width:100%;
+				background-color:none;
+			}
+			.nava{
+				float:left;
+				width:100%;
+				height:70px;
+				line-height:70px;
+				text-align:center;
+				color:#fff;
+			}
+		</style>
+    </head>
+    <body>
+		<div class="nav" id="nav">
+			<div class="cen" id="navc">
+				<div layx="125x70"><img src="/images/logo.png" style="width:125px;height:29px;margin-top:20px;"></img></div>
+				<div layx="80x70"><a href="" class="nava">产品</a></div>
+				<div layx="100x70"><a href="" class="nava">解决方案</a></div>
+				<div layx="120x70"><a href="" class="nava">活动与支持</a></div>
+			</div>
+		</div>
+		<div class="upshow bg1" style="height:400px">
+			<img src="/images/banner.png" style="width:100%;height:100%;"/>
+		</div>
+		<div class="mgup cen" id="wd">
+			<div class="me" layx="200x306">
+				<div class="b1 subm" layy="200x100"></div>
+				<div class="b1 subm" layy="200x100"></div>
+				<div class="b1 subm" layy="200xauto"></div>
+			</div>
+			<div class="b1 me" layx="200x306"></div>
+			<div class="b1 me" layx="200x306"></div>
+			<div class="b1 me" layx="200x306"></div>
+			<div class="b1 mr" layx="autoxnull"><br/><br/><br/><br/><br/></div>
+		</div>
+		<div class="cen mgup" id="chixu">
+			<div class="b1 " layy="nullx80" style="font-size:30px;line-height:80px;text-align:center;">
+				持续挖掘海量数据的无限价值
+			</div>
+			<div class="" layy="nullx300">
+				<div class="b1" layx="530x300"></div>
+				<div class="b1" layx="autox300"></div>
+			</div>
+			<div class="" layy="nullx300">
+				<div class="b1" layx="530x300"></div>
+				<div class="b1" layx="autox300"></div>
+			</div>
+		</div>
+		<div class="foot mgup">
+			<div class="cen" id="footcen">
+				<div class="b1" layy="nullx400"></div>
+				<div class="b1" layy="nullx100"></div>
+			</div>
+		</div>
+    </body>
+    <script type="text/javascript">
+	   $(document).scroll(function(){
+			if($(document).scrollTop() > 100){
+				$('#nav').css({'background-color':'#aaa'});
+			}else{
+				$('#nav').css({'background-color':'transparent'});
+			}
+	   });
+	   $('#nav').mouseover(function(){
+			$('#nav').css({'background-color':'#aaa'});
+	   });
+	   
+	   $('#nav').mouseout(function(){
+			if($(document).scrollTop() < 100){
+				$('#nav').css({'background-color':'transparent'});
+			}
+	   });
+	   autoLay('navc',{mg:2});
+       autoLay('wd',{mg:10});
+       autoLay('chixu',{mg:10});
+       autoLay('footcen',{mg:10});
+    </script>
+</html>

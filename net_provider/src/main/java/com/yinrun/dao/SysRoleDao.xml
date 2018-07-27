@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.yinrun.dao.SysRoleDao">
+	<select id="findUserRoleByRoleId" resultType="com.yinrun.model.SysUserRoleModel">
+		SELECT
+			id,
+			user_id userId,
+			role_id roleId,
+			update_time updateTime,
+		  create_time createTime
+		FROM
+			sys_user_role
+		WHERE
+			role_id = #{roleId}
+	</select>
+	
+	<select id="findPowerByRoleId" resultType="com.yinrun.model.SysPowerModel">
+		SELECT
+			sp.id,
+			sp.name,
+			sp.code,
+			sp.parent_code parentCode,
+			sp.type,
+			sp.power,
+			sp.link,
+			sp.mark,
+			sp.ico,
+			sp.sequence,
+			sp.create_time createTime,
+			sp.update_time updateTime
+		FROM
+			sys_power sp
+		JOIN sys_role_power srp ON sp.id = srp.power_id
+		AND srp.role_id = #{roleId}
+	</select>
+</mapper>

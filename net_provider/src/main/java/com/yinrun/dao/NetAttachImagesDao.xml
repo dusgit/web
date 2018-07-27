@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.yinrun.dao.NetAttachImagesDao">
+	<select id="findByTargetIdAndType" resultType="com.yinrun.model.NetAttachImagesModel">
+		SELECT
+			id,
+			target_id targetId,
+			sequence,
+			url,
+			type,
+			update_time updateTime,
+		  	create_time createTime
+		FROM
+			net_attach_images
+		WHERE
+			target_id = #{targetId}
+		And
+			type = #{type}
+		ORDER BY
+			sequence DESC
+	</select>
+	
+	<delete id = "deleteByTargetIdAndType">
+		DELETE
+		FROM
+			net_attach_images
+		WHERE
+			target_id = #{targetId}
+		And
+			type = #{type}
+	</delete>
+</mapper>

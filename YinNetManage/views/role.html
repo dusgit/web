@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<%- include mod_head.html %>
+		<title>管理后台欢迎页面</title>
+</head>
+<body>
+	<div>
+		<div class="top_area">
+			<%- include mod_top.html %>
+		</div>
+		<div class="bom_area">
+			<div class="nav_menu_area">
+				<%- include mod_menu.html %>
+			</div>
+			<div class="work_area" id="work_area">
+				角色管理页面
+			</div>
+		</div>
+	</div>
+	<%- include mod_template.html %>
+	<div id="pop_add" style="display:none;">
+		<ul class="pop_edt_ul">
+			<li><span class="pop_edt_sp">角色名称</span><input type="text" id="pop_add_role_name" placeholder="英文单词描述" class="pop_edt_ipt"/></li>
+			<li><span class="pop_edt_sp">角色描述</span><input type="text" id="pop_add_mark" class="pop_edt_ipt"/></li>
+			<li><span class="pop_edt_sp">角色权限</span>
+				<div class="pop_edt_power_div">
+					<div class="pop_edt_power_in" id="pop_add_power_in"></div>
+				</div>
+			</li>
+		</ul>
+		<div style="text-align:center;margin-top:20px;">
+			<button onclick="addSave()" id="pop_add_btn" class="pop_edt_btn">保&nbsp;&nbsp;&nbsp;&nbsp;存</button>
+		</div>
+	</div>
+	<div id="pop_edit" style="display:none;">
+		<ul class="pop_edt_ul">
+			<input type="hidden" id="pop_edt_id"/>
+			<li><span class="pop_edt_sp">角色名称</span><input type="text" id="pop_edt_role_name" placeholder="英文单词描述" class="pop_edt_ipt"/></li>
+			<li><span class="pop_edt_sp">角色描述</span><input type="text" id="pop_edt_mark" class="pop_edt_ipt"/></li>
+			<li><span class="pop_edt_sp">角色权限</span>
+				<div class="pop_edt_power_div">
+					<div class="pop_edt_power_in" id="pop_edt_power_in"></div>
+				</div>
+			</li>
+		</ul>
+		<div style="text-align:center;margin-top:20px;">
+			<button onclick="editSave()" id="pop_edt_btn" class="pop_edt_btn">保&nbsp;&nbsp;&nbsp;&nbsp;存</button>
+		</div>
+	</div>
+</body>
+<script type="text/javascript">
+var opts = {
+	fields:[
+		{
+			name  : '角色id',field : 'id',query : false,type  : 'hidden'
+		},{
+			name  : '角色名称',field : 'roleName',query : true,type  : 'input'
+		},
+		{
+			name  : '角色描述',field : 'mark',query : true,type  : 'input'
+		},
+		{
+			name  : '角色状态',field : 'validFlag',query : true,type  : 'select',
+			dict  : [{key:'',value:'请选择'},{key:'0',value:'无效'},{key:'1',value:'有效'}]
+		}
+	],
+	query_btns:[{name:'查询',click:'findListPage',power:'sys_role:list'},{name:'新增',click:'add',power:'sys_role:save'}],
+	action_btns:[
+		{name:'编辑',click:'edit',power:'sys_role:update'},
+		{name:'删除',click:'deleteUser',power:'sys_role:delete'}
+	]
+}
+$(document).ready(function(){
+	initTemplate(opts);
+	findListPage();
+});
+
+function showPowerTree(id,type,cb){
+	var html = '<ul class="power_tree_ul">';
+	findPowerListPage(function(powerList){
+		$.each(powerList,function(idx,ele){
+			if(!ele.parentCode){
+				var idthis = idx + '_';
+				html += '<li><input type="checkbox" value="'+ele.id+'" id="'+idthis+'" onchange="checkbox(\''+idthis+'\')" name="'+type+'_power_tree_box"/>'+ele.name+'</li>';
+				html += getSubHtml(powerList,ele.code,1,idx+'_',type);
+			}
+		});
+		html += '</ul>';
+		$('#'+id).html(html);
+		cb&&cb();
+	});
+}
+function getSubHtml(powerList,code,num,parentId,type){
+	var html = '';
+	$.each(powerList,function(idx,ele){
+		if(ele.parentCode == code){
+			var idthis = parentId + idx + '_';
+			html += '<li>'+getBarHtml(num)+'<input type="checkbox" id="'+idthis+'" value="'+ele.id+'" onchange="checkbox(\''+idthis+'\')" name="'+type+'_power_tree_box"/>'+ele.name+'</li>';
+			html += getSubHtml(powerList,ele.code,num + 1,parentId + idx +'_',type);
+		}
+	});
+	return html;
+}
+function checkbox(id){
+	if($('#'+id).is(':checked')){
+		while(id.indexOf('_') > 0){
+			id = id.substring(0,id.lastIndexOf('_')-1);
+			if(id.lastIndexOf('_') + 1 != id.length){
+				id = id.substring(0,id.lastIndexOf('_')+1);
+			}
+			if(id.length > 0){
+				$('#'+id).prop('checked',true);
+			}
+		}
+	}else{
+		$.each($('input:checkbox'),function(idx,ele){
+			if($(ele).attr('id').indexOf(id) == 0){
+				$('#'+$(ele).attr('id')).prop('checked',false);
+			}
+		});
+	}
+}
+function getBarHtml(num){
+	var html = '';
+	for(var i=0;i<num;i++){
+		html += '<span class="bar"></span>';
+	}
+	return html;
+}
+function findPowerListPage(cb){
+	var powerList = $('body').data('powerList');
+	if(!!powerList){
+		cb(powerList);
+		return;
+	}
+	var data = {};
+	data['currentPage'] = 1;
+	data['pageSize'] = 100;
+	$.ajax({
+		url:'/yinrun/findPowerListPage?t='+Date.now(),
+		type:'get',
+		data:data,
+		success:function(res){
+			res = JSON.parse(res);
+			if(res.status == 'success'){
+				$('body').data('powerList',res.results.list);
+				cb(res.results.list);
+			}else{
+				showTip(res.message);
+			}
+		}
+	});
+}
+function findListPage(currentPage){
+	var data = getQueryParam();
+	data['currentPage'] = currentPage || 1;
+	$.ajax({
+		url:'/yinrun/findRoleListPage',
+		type:'get',
+		data:data,
+		success:function(res){
+			res = JSON.parse(res);
+			if(res.status == 'success'){
+				showTemplate(opts,res.results,findListPage);
+			}else{
+				showTip(res.message);
+			}
+		}
+	});
+}
+function add(){
+	var pop_add = $('body').data('pop_add');
+	if(!pop_add){
+		$('body').data('pop_add',$('#pop_add').html());
+	}else{
+		$('#pop_add').html($('body').data('pop_add'));
+	}
+	var opts={
+		width:600,
+		height:600,
+		title:'新增角色',
+		html:$('#pop_add').html()
+	}
+	showPopWindow(opts);
+	$('#pop_add').html('');
+	showPowerTree('pop_add_power_in','add');
+}
+function addSave(){
+	var roleName = $('#pop_add_role_name').val();
+	var mark = $('#pop_add_mark').val();
+	if(!roleName){
+		showTip('角色名称不能为空');
+		return;
+	}
+	if(!mark){
+		showTip('角色描述不能为空');
+		return;
+	}
+	var powerIds = getCheckValue('add_power_tree_box');
+	if(!powerIds){
+		showTip('权限不能为空');
+		return;
+	}
+	var data = {
+		roleName : roleName,
+		mark : mark,
+		powerIds : powerIds
+	}
+	$('#pop_add_btn').attr('disabled',true); 
+	$('#pop_add_btn').addClass('btn_invalid');
+	var actionName = 'role_save';
+	if(isActionLock(actionName)){
+		return;
+	}
+	lockAction(actionName);
+	$.ajax({
+		url:'/yinrun/addRole',
+		type:'post',
+		data:data,
+		success:function(res){
+			res = JSON.parse(res);
+			if(res.status == 'success'){
+				showTip('保存成功');
+				findListPage(template.page.currentPage||1);
+				$('#pop_add_btn').attr('disabled',false); 
+				$('#pop_add_btn').removeClass('btn_invalid');
+				closePopWindow();
+			}else{
+				showTip(res.message||'更新失败');
+			}
+			unlockAction(actionName);
+		}
+	});
+}
+
+function edit(id){
+	var ele = getDataById(id);
+	var pop_edit = $('body').data('pop_edit');
+	if(!pop_edit){
+		$('body').data('pop_edit',$('#pop_edit').html());
+	}else{
+		$('#pop_edit').html($('body').data('pop_edit'));
+	}
+	var opts={
+		width:600,
+		height:600,
+		title:'编辑角色',
+		html:$('#pop_edit').html()
+	}
+	showPopWindow(opts);
+	$('#pop_edit').html('');
+	//设置值
+	$('#pop_edt_id').val(ele['id'] || '');
+	$('#pop_edt_role_name').val(ele['roleName']);
+	$('#pop_edt_mark').val(ele['mark'] || '');
+	//设置权限树
+	showPowerTree('pop_edt_power_in','edt',function(){
+		$.ajax({
+			url:'/yinrun/findRolePowerList',
+			type:'get',
+			data:{id:id},
+			success:function(res){
+				res = JSON.parse(res);
+				$.each(res.results.list,function(idx,ele){
+					console.log(ele.id);
+					$('input:checkbox[value="'+ele.id+'"]').prop('checked',true);
+				});
+			}
+		});
+	});
+	
+}
+
+function editSave(){
+	var id = $('#pop_edt_id').val();
+	var roleName = $('#pop_edt_role_name').val();
+	var mark = $('#pop_edt_mark').val();
+	var powerIds = getCheckValue('edt_power_tree_box');
+	if(!powerIds){
+		showTip('权限不能为空');
+		return;
+	}
+	if(!id){
+		showTip('id不能空');
+		return;
+	}
+	if(!roleName){
+		showTip('角色名称不能为空');
+		return;
+	}
+	if(!mark){
+		showTip('角色描述不能为空');
+		return;
+	}
+	var opts = {
+		id       : id,
+		roleName : roleName,
+		mark     : mark,
+		powerIds : powerIds
+	}
+	console.log(opts);
+	$('#pop_edt_btn').attr('disabled',true); 
+	$('#pop_edt_btn').addClass('btn_invalid');
+	$.ajax({
+		url:'/yinrun/updateRole',
+		type:'post',
+		data:opts,
+		success:function(res){
+			res = JSON.parse(res);
+			if(res.status == 'success'){
+				showTip('更新成功');
+				findListPage(template.page.currentPage||1);
+				$('#pop_edt_btn').attr('disabled',false); 
+				$('#pop_edt_btn').removeClass('btn_invalid');
+				closePopWindow(1000);
+			}else{
+				showTip(res.message||'更新失败');
+			}
+		}
+	});
+}
+function deleteUser(id){
+	if(!id){
+		showTip('删除id不能为空');
+		return;
+	}
+	showConfirm('确定要删除吗?',function(){
+		$.ajax({
+			url:'/yinrun/deleteRole',
+			type:'post',
+			data:{id:id},
+			success:function(res){
+				res = JSON.parse(res);
+				if(res.status == 'success'){
+					showTip('删除成功');
+					findListPage(template.page.currentPage||1);
+				}else{
+					showTip(res.message||'删除失败');
+				}
+			}
+		});
+	});
+}
+
+</script>
+</html>

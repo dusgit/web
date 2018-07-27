@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<%- include mod_head.html %>
+		<title>管理后台欢迎页面</title>
+		<script charset="utf-8" src="/kindeditor/kindeditor-min.js"></script>
+		<script charset="utf-8" src="/kindeditor/lang/zh-CN.js"></script>
+</head>
+<body>
+	<div>
+		<div class="top_area">
+			<%- include mod_top.html %>
+		</div>
+		<div class="bom_area">
+			<div class="nav_menu_area">
+				<%- include mod_menu.html %>
+			</div>
+			<div class="work_area" id="work_area">
+				字典管理页面
+			</div>
+		</div>
+	</div>
+	<%- include mod_template.html %>
+</body>
+<script type="text/javascript">
+var opts = {
+	title:'字典',
+	fields:[
+		{
+			name    : '主键',
+			field   : 'id', 
+			query   : false,
+			type    : 'hidden',
+			add     : 'hidden',
+			edit    : 'disabled'
+		},
+		{
+			name    : '字典编码',    
+			field   : 'code', 
+			query   : true,
+			type    : 'input'
+		},
+		{
+			name    : '字典内容',    
+			field   : 'content', 
+			query   : true,
+			type    : 'input'
+		},
+		{
+			name    : '字典组名',    
+			field   : 'type', 
+			query   : true,
+			type    : 'input'
+		}
+	],
+	query_btns :[{name:'查询',click:'findListPage',power:'sys_dict:list'},{name:'新增',click:'template_add',power:'sys_dict:save'}],
+	action_btns:[{name:'编辑',click:'template_edit',power:'sys_dict:update'},{name:'删除',click:'deleteDict',power:'sys_dict:delete'}],
+	add  : {
+			  	addSave : addSave,
+			  	pop_window_width:600,
+			  	pop_window_height:600
+		   },
+	edit : {
+			  	editSave : editSave,
+				pop_window_width:600,
+				pop_window_height:600
+		   }
+}
+$(document).ready(function(){
+	initTemplate(opts,function(){});
+	findListPage();
+});
+
+function findListPage(currentPage){
+	var data = getQueryParam();
+	data['currentPage'] = currentPage || 1;
+	$.ajax({
+		url:'/yinrun/findDictListPage?t='+Date.now(),
+		type:'get',
+		data:data,
+		success:function(res){
+			res = JSON.parse(res);
+			if(res.status == 'success'){
+				showTemplate(opts,res.results,findListPage);
+			}else{
+				showTip(res.message);
+			}
+		}
+	});
+}
+function addSave(opts){
+	if(!opts.code){
+		showTip('字典编码不能为空');
+		return;
+	}
+	if(!opts.content){
+		showTip('字典内容不能为空');
+		return;
+	}
+	if(!opts.type){
+		showTip('字典组名不能为空');
+		return;
+	}
+	var actionName = 'sys_dict_save';
+	if(isActionLock(actionName)){
+		return;
+	}
+	lockAction(actionName);
+	$.ajax({
+		url:'/yinrun/addSysDict',
+		type:'post',
+		data:opts,
+		success:function(res){
+			res = JSON.parse(res);
+			if(res.status = 'success'){
+				showTip('保存成功');
+				var data = getQueryParam();
+				findListPage(data['currentPage']);
+				closePopWindow();
+			}
+			unlockAction(actionName);
+		}
+	});
+}
+function editSave(opts){
+	if(!opts.code){
+		showTip('字典编码不能为空');
+		return;
+	}
+	if(!opts.content){
+		showTip('字典内容不能为空');
+		return;
+	}
+	if(!opts.type){
+		showTip('字典组名不能为空');
+		return;
+	}
+	$.ajax({
+		url:'/yinrun/updateSysDict',
+		type:'post',
+		data:opts,
+		success:function(res){
+			res = JSON.parse(res);
+			if(res.status = 'success'){
+				showTip('更新成功');
+				setTimeout(function(){
+					closePopWindow();
+					var data = getQueryParam();
+					findListPage(data['currentPage']);
+				},1000);
+			}
+		}
+	});
+}
+function deleteDict(id){
+	var opts = {
+		id : id
+	}
+	showConfirm('确定要删除吗?',function(){
+		$.ajax({
+			url:'/yinrun/deleteSysDict',
+			type:'post',
+			data:opts,
+			success:function(res){
+				res = JSON.parse(res);
+				if(res.status = 'success'){
+					showTip('删除成功');
+					setTimeout(function(){
+						closePopWindow();
+						var data = getQueryParam();
+						findListPage(data['currentPage']);
+					},1000);
+				}
+			}
+		});
+	});
+}
+
+</script>
+</html>

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<%- include mod_head.html %>
+		<title>管理后台欢迎页面</title>
+		<script charset="utf-8" src="/kindeditor/kindeditor-min.js"></script>
+		<script charset="utf-8" src="/kindeditor/lang/zh-CN.js"></script>
+</head>
+<body>
+	<div>
+		<div class="top_area">
+			<%- include mod_top.html %>
+		</div>
+		<div class="bom_area">
+			<div class="nav_menu_area">
+				<%- include mod_menu.html %>
+			</div>
+			<div class="work_area" id="work_area">
+				新闻动态管理页面
+			</div>
+		</div>
+	</div>
+	<%- include mod_template.html %>
+</body>
+<script type="text/javascript">
+var opts = {
+	title:'新闻动态',
+	fields:[
+		{
+			name    : '主键',
+			field   : 'id', 
+			query   : false,
+			type    : 'hidden',
+			add     : 'hidden',
+			edit    : 'disabled'
+		},
+		{
+			name    : '标题',    
+			field   : 'title', 
+			query   : true,
+			type    : 'input'
+		},{
+			name    : '点击次数',
+			field   : 'hits',  
+			query   : false,
+			type    : 'hidden'
+		},{
+			name    : '置顶排序',
+			field   : 'sequence',  
+			query   : false,
+			type    : 'input'
+		},{
+			name    : '内容',
+			field   : 'content',
+			query   : false,
+			type    : 'hidden',
+			addHtml : getContentAddHtml(),
+			editHtml : getContentEditHtml()
+		},{
+			name    : '类型',    
+			field   : 'type',  
+			query   : true,
+			type    : 'select',
+			dict    : [{key:'',value:'请选择'},{key:'1',value:'新闻'},{key:'99',value:'其他'}]
+		},{
+			name    : '状态',    
+			field   : 'state',  
+			query   : true,
+			type    : 'select',
+			dict    : [{key:'',value:'请选择'},{key:'1',value:'正常'},{key:'0',value:'禁用'}]
+		},{
+			name    : '创建时间', 
+			field   : 'createTime',
+			query   : false,
+			type    : 'time',
+			add     : 'hidden',
+			edit    : 'hidden'
+		}
+	],
+	query_btns :[{name:'查询',click:'findListPage',power:'net_article:list'},{name:'新增',click:'template_add',power:'net_article:save'}],
+	action_btns:[{name:'编辑',click:'template_edit',power:'net_article:update'},{name:'删除',click:'deleteNews',power:'net_article:delete'}],
+	add  : {
+			  	addSave : addSave,
+			  	pop_window_width:1000,
+			  	pop_window_height:800,
+			  	cb : cb_add
+		   },
+	edit : {
+			  	editSave : editSave,
+				pop_window_width:1000,
+				pop_window_height:800,
+				cb : cb_edit
+		   }
+}
+$(document).ready(function(){
+	initTemplate(opts,function(){});
+	findListPage();
+});
+function cb_add(){
+	//初始化富文本编辑器
+	$('body').data('kindeditor_add',KindEditor.create('textarea[name="addcontent"]',getKindleSet()));
+	$('span[data-name="image"]').click(function(){
+		setTimeout(function(){
+			$('#remoteWidth').val(750);
+		},500);
+	});
+}
+function cb_edit(id){
+	//初始化富文本编辑器
+	$('body').data('kindeditor_edit',KindEditor.create('textarea[name="editcontent"]',getKindleSet()));
+	//设置值
+	var item = getDataById(id);
+	$('body').data('kindeditor_edit').html(item.content);
+}
+function getKindleSet(){
+	var set = {
+		items:[
+        'source', '|', 'undo', 'redo', '|', 'preview', 'print', 'template', 'code', 'cut', 'copy', 'paste',
+        'plainpaste', 'wordpaste', '|', 'justifyleft', 'justifycenter', 'justifyright',
+        'justifyfull', 'insertorderedlist', 'insertunorderedlist', 'indent', 'outdent', 'subscript',
+        'superscript', 'clearhtml', 'quickformat', 'selectall', '|', 'fullscreen', '/',
+        'formatblock', 'fontname', 'fontsize', '|', 'forecolor', 'hilitecolor', 'bold',
+        'italic', 'underline', 'strikethrough', 'lineheight', 'removeformat', '|', 'image',
+        'flash', 'media', 'insertfile', 'table', 'hr', 'emoticons', 'baidumap', 'pagebreak',
+        'anchor', 'link', 'unlink', '|', 'about'
+]
+	}
+	return set;
+}
+function findListPage(currentPage){
+	console.log('重新查询');
+	var data = getQueryParam();
+	data['currentPage'] = currentPage || 1;
+	$.ajax({
+		url:'/yinrun/findArticleListPage?t='+Date.now(),
+		type:'get',
+		data:data,
+		success:function(res){
+			res = JSON.parse(res);
+			if(res.status == 'success'){
+				showTemplate(opts,res.results,findListPage);
+				console.log('asdfdddddddd');
+			}else{
+				showTip(res.message);
+			}
+		}
+	});
+}
+function addSave(opts){
+	var kindeditor = $('body').data('kindeditor_add');
+	opts.content = kindeditor.html();
+	if(opts.hits && !opts.hits.match(/^[\d]+$/)){
+		showTip('点击次数不合法');
+		return;
+	}
+	if(!opts.title){
+		showTip('标题不能为空');
+		return;
+	}
+	if(!opts.state){
+		showTip('状态不能为空');
+		return;
+	}
+	if(!opts.type){
+		showTip('类型不能为空');
+		return;
+	}
+	if(!opts.content){
+		showTip('内容不能为空');
+		return;
+	}
+	var actionName = 'net_news_save';
+	if(isActionLock(actionName)){
+		return;
+	}
+	lockAction(actionName);
+	$.ajax({
+		url:'/yinrun/addNetNews',
+		type:'post',
+		data:opts,
+		success:function(res){
+			res = JSON.parse(res);
+			if(res.status = 'success'){
+				showTip('保存成功');
+				var data = getQueryParam();
+				findListPage(data['currentPage']);
+				closePopWindow();
+			}else{
+				showTip(res.message||'保存失败');
+			}
+			unlockAction(actionName);
+		}
+	});
+}
+function editSave(opts){
+	var kindeditor = $('body').data('kindeditor_edit');
+	opts.content = kindeditor.html();
+	if(!opts.title){
+		showTip('标题不能为空');
+		return;
+	}
+	if(!opts.state){
+		showTip('状态不能为空');
+		return;
+	}
+	if(!opts.type){
+		showTip('类型不能为空');
+		return;
+	}
+	if(!opts.content){
+		showTip('内容不能为空');
+		return;
+	}
+	$.ajax({
+		url:'/yinrun/updateNetNews',
+		type:'post',
+		data:opts,
+		success:function(res){
+			res = JSON.parse(res);
+			if(res.status = 'success'){
+				showTip('更新成功');
+				closePopWindow(1000);
+				var data = getQueryParam();
+				findListPage(data['currentPage']);
+			}
+		}
+	});
+}
+function deleteNews(id){
+	var opts = {
+		id : id
+	}
+	showConfirm('确定要删除吗?',function(){
+		$.ajax({
+			url:'/yinrun/deleteNetNews',
+			type:'post',
+			data:opts,
+			success:function(res){
+				res = JSON.parse(res);
+				if(res.status = 'success'){
+					showTip('删除成功');
+					var data = getQueryParam();
+					findListPage(data['currentPage']);
+					closePopWindow(1000);
+				}
+			}
+		});
+	});
+}
+function getContentAddHtml(){
+	return '<textarea name="addcontent" style="width:800px;height:400px;margin-top:20px;"></textarea>';
+}
+function getContentEditHtml(){
+	return '<textarea name="editcontent" style="width:800px;height:400px;margin-top:20px;"></textarea>';
+}
+</script>
+</html>

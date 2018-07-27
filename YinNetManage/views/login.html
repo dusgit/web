@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%- include mod_head.html %>
+    <title>登录页面</title>
+	<style type="text/css">
+		.divc{
+			position:absolute;
+			z-index:999;
+			height:280px;
+			width:400px;
+			left:50%;
+			top:50%;
+			margin:-150px 0px 0px -200px;
+			border:1px solid #2980b9;
+			overflow:hidden;
+			border-radius:5px;
+			box-shadow: 10px 20px 15px #888888;
+		}
+		.logtil{
+			height:40px;
+			line-height:40px;
+			font-size:16px;
+			background-color:#f5f5f5;
+			text-align:left;
+			text-indent:20px;
+			color:#2980b9;
+			letter-spacing:2px;
+			font-weight:bold;
+			border-bottom:1px solid #ddd;
+		}
+		.logul li{
+			line-height:50px;
+			height:50px;
+		}
+		.logul li input{
+			height:30px;
+			line-height:30px;
+			width:360px;
+			text-indent:10px;
+			margin:18px 20px;
+			border:1px solid #ddd;
+			border-radius:5px;
+		}
+		.logul li button{
+			height:40px;
+			line-height:40px;
+			width:360px;
+			margin:18px 20px;
+			border:1px solid #fff;
+			outline:none;
+			background-color:#2980b9;
+			color:#fff;
+			border-radius:5px;
+		}
+		.lb{
+			background-color:#f5f5f5;
+		}
+		.bg{
+			width:100%;
+			height:100%;
+			position:absolute;
+			background-color:#fafafa;
+			z-index:1;
+		}
+		.log_logo{
+			height:30px;
+		}
+	</style>
+  </head>
+  <body class="lb" onkeydown="on_return(event);">
+		<div class="divc">
+			<div class="logtil"><img src="/images/logo.png" class="log_logo"></img>&nbsp;&nbsp;茵润科技-管理后台</div>
+			<ul class="logul">
+				<li>
+					<input type="text" placeholder="用户名称" id="userName"/>
+				</li>
+				<li>
+					<input type="password" placeholder="用户密码" id="userPass"/>
+				</li>
+				<li>
+					<input type="text" placeholder="动态密码" id="dynamicCode"/>
+				</li>
+				<li>
+					<button onclick="login()">登&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;录</button>
+				</li>
+			</ul>
+		</div>
+		<div class="bg">
+		
+		</div>
+  </body>
+  <script type="text/javascript">
+	function login(){
+		var userName = $('#userName').val();
+		var userPass = $('#userPass').val();
+		var dynamicCode = $('#dynamicCode').val();
+		if(!userName){
+			showTip('用户名称不能为空!');
+			return;
+		}
+		if(!userPass){
+			showTip('用户密码不能为空!');
+			return;
+		}
+		$.ajax({
+			url:'/verifyLogin',
+			type:'post',
+			data:{userName:userName,userPass:userPass,dynamicCode:dynamicCode},
+			success:function(res){
+				console.log('------');
+				console.log(res);
+				if(res['status'] == 'success'){
+					window.location.href="/yinrun/index.html";
+				}else{
+					if(typeof res['message'] == 'object'){
+						showTip(JSON.stringify(res['message']) || '登录失败');
+					}else{
+						showTip(res['message'] || '登录失败');
+					}
+					
+				}
+			}
+		});
+	}
+	//回车时，默认是登陆
+	// function on_return(){
+	// 	if(window.event.keyCode == 13){
+	// 		login();
+	// 	}
+	// }
+	function on_return(event)  
+    {  
+        e = event ? event :(window.event ? window.event : null);  
+        var currKey=0;  
+        currKey=e.keyCode||e.which||e.charCode;  
+        if(currKey==13){  
+        	login(); 
+        }  
+    };  
+  </script>
+</html>

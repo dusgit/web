@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.yinrun.dao.SysUserDao">
+	<select id="findOneByEntity" parameterType="com.yinrun.model.SysUserModel" resultType="com.yinrun.model.SysUserModel">
+		SELECT
+			id,
+			user_name userName,
+			user_pass userPass,
+			head_url headUrl,
+			state,
+			salt,
+			real_name realName,
+			create_time createTime,
+			update_time updateTime
+		FROM
+			sys_user
+		<trim prefix="WHERE" prefixOverrides="AND |OR">
+			<if test="userName != null and userName != '' ">
+				AND user_name = #{userName}
+			</if>
+			<if test="state != null">
+				AND state = #{state}
+			</if>
+			<if test="realName != null and realName != '' ">
+				AND real_name = #{realName}
+			</if>
+		</trim>
+		limit 0,1
+	</select>
+	
+	<select id="findPowerByUserId" resultType="com.yinrun.model.SysPowerModel">
+		SELECT
+			sp.id,
+			sp.name,
+			sp.code,
+			sp.parent_code parentCode,
+			sp.type,
+			sp.mark,
+			sp.power,
+			sp.link,
+			sp.ico
+		FROM
+			sys_power sp
+		JOIN sys_role_power srp ON srp.power_id = sp.id
+		JOIN sys_user_role sur ON sur.role_id = srp.role_id
+		AND sur.user_id = #{id}
+	</select>
+	
+	<select id="findRoleByUserId" resultType="com.yinrun.model.SysRoleModel">
+		SELECT
+			sr.id,
+			sr.role_name roleName,
+			sr.mark
+		FROM
+			sys_role sr
+		JOIN sys_user_role sur ON sur.user_id = #{id}
+		AND sr.id = sur.role_id
+		WHERE
+			sr.valid_flag = 1
+	</select>
+</mapper>

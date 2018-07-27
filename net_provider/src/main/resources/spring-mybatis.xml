@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx" xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:jdbc="http://www.springframework.org/schema/jdbc" xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="
+     http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd
+     http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+     http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.1.xsd
+     http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.1.xsd
+     http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.1.xsd
+     http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-3.1.xsd">
+	<!-- 
+	<context:component-scan base-package="com.yinrun.service">
+		<context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller" />
+	</context:component-scan>
+ 	-->
+	<!-- 配置auto数据源 -->
+	<bean id="netDataSource" autowire="byName"
+		class="com.alibaba.druid.pool.DruidDataSource" init-method="init"
+		destroy-method="close">
+		<!-- 基本属性 url、user、password -->
+		<property name="url" value="${druid.auto.connection.url}" />
+		<property name="username" value="${druid.auto.connection.username}" />
+		<property name="password" value="${druid.auto.connection.password}" />
+		<property name="driverClassName" value="${druid.auto.driverClassName}" />
+		<!-- 配置初始化大小、最小、最大 -->
+		<property name="initialSize" value="${druid.auto.initialSize}" />
+		<property name="minIdle" value="${druid.auto.minIdle}" />
+		<property name="maxActive" value="${druid.auto.maxActive}" />
+		<!-- 配置获取连接等待超时的时间 -->
+		<property name="maxWait" value="${druid.auto.maxWait}" />
+		<!-- 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒 -->
+		<property name="timeBetweenEvictionRunsMillis" value="${druid.auto.timeBetweenEvictionRunsMillis}" />
+		<!-- 配置一个连接在池中最小生存的时间，单位是毫秒 -->
+		<property name="minEvictableIdleTimeMillis" value="${druid.auto.minEvictableIdleTimeMillis}" />
+		<property name="validationQuery" value="${druid.auto.validationQuery}" />
+		<property name="testWhileIdle" value="${druid.auto.testWhileIdle}" />
+		<property name="testOnBorrow" value="${druid.auto.testOnBorrow}" />
+		<property name="testOnReturn" value="${druid.auto.testOnReturn}" />
+		<!-- 打开PSCache，并且指定每个连接上PSCache的大小 如果用Oracle，则把poolPreparedStatements配置为true，mysql可以配置为false。 -->
+		<property name="poolPreparedStatements" value="${druid.auto.poolPreparedStatements}" />
+		<property name="maxPoolPreparedStatementPerConnectionSize"
+			value="${druid.auto.maxPoolPreparedStatementPerConnectionSize}" />
+		<!-- 配置监控统计拦截的filters -->
+		<property name="filters" value="${druid.auto.filters}" />
+	</bean>
+
+	<!-- 配置事务管理器 -->
+	<bean id="autoTransactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="netDataSource" />
+	</bean>
+	<!-- 启动spring事务注解，事务注解尽在此 -->
+	<tx:annotation-driven transaction-manager="autoTransactionManager" />
+	<!-- 配置事务传播特性 -->
+	<!-- spring事务处理配置 -->
+	<tx:advice id="autoTxAdvice" transaction-manager="autoTransactionManager">
+		<tx:attributes>
+			<tx:method name="save*" propagation="REQUIRED" rollback-for="Throwable" />
+			<tx:method name="delete*" propagation="REQUIRED" rollback-for="Throwable" />
+			<tx:method name="update*" propagation="REQUIRED" rollback-for="Throwable" />
+			<tx:method name="get*" propagation="REQUIRED" rollback-for="Throwable" />
+			<!-- <tx:method name="*" read-only="true" /> -->
+		</tx:attributes>
+	</tx:advice>
+	<!-- 配置参与事务的类 -->
+	<aop:config proxy-target-class="true">
+		<aop:pointcut id="autoServiceMethod"
+			expression="execution(* com.yinrun.service..*ServiceImpl.*(..))" />
+		<aop:advisor advice-ref="autoTxAdvice" pointcut-ref="autoServiceMethod" />
+	</aop:config>
+
+	<!-- 扫描所有mapper文件 -->
+	<bean id="autoSqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="netDataSource" />
+		<property name="typeAliasesPackage" value="com.yinrun.model" />
+		<property name="plugins">
+			<array>
+				<bean class="com.github.pagehelper.PageHelper">
+					<property name="properties">
+						<value>
+							dialect=mysql
+							reasonable=true
+						</value>
+					</property>
+				</bean>
+			</array>
+		</property>
+	</bean>
+	
+	<bean class="tk.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.yinrun.dao" />
+		<property name="properties">
+			<value>
+				mappers=com.yinrun.interfaces.GenericMapper
+			</value>
+		</property>
+		<property name="sqlSessionFactoryBeanName" value="autoSqlSessionFactory" />
+	</bean>
+ 	
+	<!-- spring与mybatis整合配置，扫描所有dao -->
+	<bean name="autoMapperScannerConfigurer" class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.yinrun.dao" />
+		<property name="sqlSessionFactoryBeanName" value="autoSqlSessionFactory" />
+	</bean>
+</beans>

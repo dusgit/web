@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<%- include mod_head.html %>
+		<title>管理后台欢迎页面</title>
+</head>
+<body>
+	<div>
+		<div class="top_area">
+			<%- include mod_top.html %>
+		</div>
+		<div class="bom_area">
+			<div class="nav_menu_area">
+				<%- include mod_menu.html %>
+			</div>
+			<div class="work_area" id="work_area">
+				用户管理页面
+			</div>
+		</div>
+	</div>
+	<%- include mod_template.html %>
+	<div id="pop_add" style="display:none;">
+		<ul class="pop_edt_ul">
+			<li><span class="pop_edt_sp">用户账号</span><input type="text" id="pop_add_user_name" class="pop_edt_ipt"/></li>
+			<li><span class="pop_edt_sp">用户密码</span><input type="text" id="pop_add_user_pass" class="pop_edt_ipt"/></li>
+			<li><span class="pop_edt_sp">用户状态</span>
+				<select class="pop_edt_ipt" id="pop_add_state">
+						<option value="0">禁用</option>
+						<option value="1" selected>正常</option>
+				</select>
+			</li>
+			<li><span class="pop_edt_sp">真实姓名</span><input type="text" id="pop_add_real_name" class="pop_edt_ipt"/></li>
+			<li>
+				<span class="pop_edt_sp">用户角色</span>
+				<div class="role_div" id="role_div"></div>
+			</li>
+		</ul>
+		<div style="text-align:center;margin-top:20px;">
+			<button onclick="addSave()" id="pop_add_btn" class="pop_edt_btn">保&nbsp;&nbsp;&nbsp;&nbsp;存</button>
+		</div>
+	</div>
+	<div id="pop_edit" style="display:none;">
+		<ul class="pop_edt_ul">
+			<input type="hidden" id="pop_edt_id"/>
+			<li><span class="pop_edt_sp">用户账号</span><input type="text" id="pop_edt_user_name" class="pop_edt_ipt" disabled="disabled"/></li>
+			<li><span class="pop_edt_sp">用户密码</span><input type="text" id="pop_edt_user_pass" value="" placeholder="重置请输入新密码" class="pop_edt_ipt"/></li>
+			<li><span class="pop_edt_sp">用户状态</span>
+				<select class="pop_edt_ipt" id="pop_edt_state">
+						<option value="0">禁用</option>
+						<option value="1">正常</option>
+				</select>
+			</li>
+			<li><span class="pop_edt_sp">真实姓名</span><input type="text" id="pop_edt_real_name" class="pop_edt_ipt"</li>
+			<li><span class="pop_edt_sp">用户角色</span>
+				<div class="role_div" id="role_edit_div"></div>
+			</li>
+		</ul>
+		<div style="text-align:center;margin-top:20px;">
+			<button onclick="editSave()" id="pop_edt_btn" class="pop_edt_btn">保&nbsp;&nbsp;&nbsp;&nbsp;存</button>
+		</div>
+	</div>
+</body>
+<script type="text/javascript">
+var opts = {
+	fields:[
+		{
+			name  : '用户id',field : 'id',query : false,type  : 'hidden'
+		},{
+			name  : '用户名称',field : 'userName',query : true,type  : 'input'
+		},
+		/*{
+			name  : '用户头像',field : 'headUrl',query : false,type  : ''
+		},*/
+		{
+			name  : '用户状态',field : 'state',query : true,type  : 'select',
+			dict  : [{key:'',value:'请选择'},{key:'0',value:'禁用'},{key:'1',value:'正常'}]
+		}
+	],
+	query_btns:[{name:'查询',click:'findListPage'},{name:'新增',click:'add'}],
+	action_btns:[
+		{name:'编辑',click:'edit'},
+		{name:'删除',click:'deleteUser'}
+	]
+}
+$(document).ready(function(){
+	initTemplate(opts);
+	findListPage();
+});
+function findListPage(currentPage){
+	var data = getQueryParam();
+	data['currentPage'] = currentPage || 1;
+	$.ajax({
+		url:'/yinrun/findUserListPage?t='+Date.now(),
+		type:'get',
+		data:data,
+		success:function(res){
+			res = JSON.parse(res);
+			if(res.status == 'success'){
+				showTemplate(opts,res.results,findListPage);
+			}else{
+				showTip(res.message);
+			}
+		}
+	});
+}
+function add(){
+	var pop_add = $('body').data('pop_add');
+	if(!pop_add){
+		$('body').data('pop_add',$('#pop_add').html());
+	}else{
+		$('#pop_add').html($('body').data('pop_add'));
+	}
+	var opts={
+		width:600,
+		height:600,
+		title:'新增用户基本信息',
+		html:$('#pop_add').html()
+	}
+	showPopWindow(opts);
+	$('#pop_add').html('');
+	getLoginUserRoleArray(function(roleArray){
+		if(roleArray){
+			var html = '';
+			$.each(roleArray,function(idx,ele){
+				html += '<input type="checkbox" name="pop_add_role" value="'+ele.id+'"/>&nbsp;'+ele.mark+'&nbsp;&nbsp;';
+			});
+			$('#role_div').html(html);
+		}
+	});
+}
+function addSave(){
+	var userName = $('#pop_add_user_name').val();
+	var userPass = $('#pop_add_user_pass').val();
+	var state    = $('#pop_add_state').val();
+	var realName = $('#pop_add_real_name').val();
+	var roleIds = getCheckValue('pop_add_role');
+	if(!userName){
+		showTip('用户名称不能为空');
+		return;
+	}
+	if(!userPass){
+		showTip('用户密码不能为空');
+		return;
+	}
+	if(!realName){
+		showTip('真实姓名不能为空');
+		return;
+	}
+	if(!roleIds){
+		showTip('用户角色不能为空');
+		return;
+	}
+	var data = {
+		userName : userName,
+		userPass : userPass,
+		state : state,
+		realName : realName,
+		roleIds : roleIds
+	}
+	$('#pop_add_btn').attr('disabled',true); 
+	$('#pop_add_btn').addClass('btn_invalid');
+	$.ajax({
+		url:'/yinrun/addUser',
+		type:'post',
+		data:data,
+		success:function(res){
+			res = JSON.parse(res);
+			if(res.status == 'success'){
+				showTip('保存成功');
+				findListPage(template.page.currentPage||1);
+				$('#pop_add_btn').attr('disabled',false); 
+				$('#pop_add_btn').removeClass('btn_invalid');
+				closePopWindow(1000);
+			}else{
+				showTip(res.message||'更新失败');
+			}
+		}
+	});
+}
+function getCheckValue(name){
+	var roleIds = [];
+	$.each($("input[name='"+name+"']:checked"),function(idx,ele){
+		roleIds.push($(ele).attr('value'));
+	});
+	return roleIds.join(',');
+}
+function edit(id){
+	var ele = getDataById(id);
+	var pop_edit = $('body').data('pop_edit');
+	if(!pop_edit){
+		$('body').data('pop_edit',$('#pop_edit').html());
+	}else{
+		$('#pop_edit').html($('body').data('pop_edit'));
+	}
+	var opts={
+		width:600,
+		height:600,
+		title:'编辑用户基本信息',
+		html:$('#pop_edit').html()
+	}
+	showPopWindow(opts);
+	$('#pop_edit').html('');
+	//设置值
+	$('#pop_edt_id').val(ele['id'] || '');
+	$('#pop_edt_state').val(ele['state']);
+	$('#pop_edt_user_name').val(ele['userName'] || '');
+	$('#pop_edt_real_name').val(ele['realName'] || '');
+	//设置角色值
+	getLoginUserRoleArray(function(roleArray){
+		getUserRoleArrayById(ele['id'],function(roleCurrentArray){
+			var html = '';
+			$.each(roleArray,function(idx,ele){
+				var exist = 0;
+				$.each(roleCurrentArray,function(index,element){
+					if(element.id == ele.id){
+						exist = 1;
+					}
+				});
+				html += '<input type="checkbox" '+(exist == 1 ? "checked":"")+' name="pop_edt_role" value="'+ele.id+'"/>&nbsp;'+ele.mark+'&nbsp;&nbsp;';
+			});
+			$('#role_edit_div').html(html);
+		});
+	});
+}
+
+function editSave(){
+	var id = $('#pop_edt_id').val();
+	var state = $('#pop_edt_state').val();
+	var realName = $('#pop_edt_real_name').val();
+	var userPass = $('#pop_edt_user_pass').val();
+	var roleIds = getCheckValue('pop_edt_role');
+	var ele = getDataById(id);
+	if(!id){
+		showTip('id不能空');
+		return;
+	}
+	if(!state){
+		showTip('用户状态不能为空');
+		return;
+	}
+	if(!realName){
+		showTip('真实名称不能为空');
+		return;
+	}
+	if(!roleIds){
+		showTip('角色不能为空');
+		return;
+	}
+	var opts = {
+		id : id,
+		state : state,
+		realName:realName,
+		roleIds : roleIds,
+		userPass : userPass
+	}
+	$('#pop_edt_btn').attr('disabled',true); 
+	$('#pop_edt_btn').addClass('btn_invalid');
+	$.ajax({
+		url:'/yinrun/updateUser',
+		type:'post',
+		data:opts,
+		success:function(res){
+			console.log(res);
+			res = JSON.parse(res);
+			if(res.status == 'success'){
+				showTip('更新成功');
+				findListPage(template.page.currentPage||1);
+				$('#pop_edt_btn').attr('disabled',false); 
+				$('#pop_edt_btn').removeClass('btn_invalid');
+				closePopWindow(1000);
+			}else{
+				showTip(res.message||'更新失败');
+			}
+		}
+	});
+}
+function deleteUser(id){
+	if(!id){
+		showTip('删除id不能为空');
+		return;
+	}
+	$.ajax({
+		url:'/yinrun/deleteUser',
+		type:'post',
+		data:{id:id},
+		success:function(res){
+			res = JSON.parse(res);
+			if(res.status == 'success'){
+				showTip('删除成功');
+				findListPage(template.page.currentPage||1);
+				$('#pop_edt_btn').attr('disabled',false); 
+				$('#pop_edt_btn').removeClass('btn_invalid');
+			}else{
+				showTip(res.message||'删除失败');
+			}
+		}
+	});
+}
+function getLoginUserRoleArray(cb){
+	var roleArray = $('body').data('roleArray');
+	if(!roleArray){
+		$.ajax({
+			url:'/yinrun/findCurrentRoleList',
+			type:'get',
+			data:{},
+			success:function(res){
+				res = JSON.parse(res);
+				if(res.status == 'success'){
+					$('body').data('roleArray',res.results.list);
+					cb(res.results.list);
+				}
+				console.log(typeof res);
+				console.log(res);
+			}
+		});
+	}else{
+		cb(roleArray);
+	}
+}
+function getUserRoleArrayById(userId,cb){
+	$.ajax({
+		url:'/yinrun/findUserRoleList',
+		type:'get',
+		data:{id:userId},
+		success:function(res){
+			res = JSON.parse(res);
+			if(res.status == 'success'){
+				cb(res.results.list);
+			}
+			console.log(typeof res);
+			console.log(res);
+		}
+	});
+}
+</script>
+</html>

@@ -1,0 +1,11 @@
+body{
+	padding:0px;margin:0px;font-size:14px;font: normal normal normal 14px/1 FontAwesome;
+}
+ul{
+	list-style-type:none;margin:0px;padding:0px;
+}
+a{
+	text-decoration: none;
+}
+.fl{float:left;}
+.fr{float:right;}
