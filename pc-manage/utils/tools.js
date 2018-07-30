@@ -4,7 +4,6 @@ var redis = require('./redis');
 var http = require('./httpUtil');
 var mysql = require('./mysql');
 var stringUtil = require('./stringUtil');
-var table = require('./table');
 
 
 var Tools = {
@@ -15,8 +14,7 @@ var Tools = {
 	redis       : redis,
 	http        : http,
 	mysql       : mysql,
-	stringUtil  : stringUtil,
-	table       : table
+	stringUtil  : stringUtil
 };
 
 module.exports = Tools;

@@ -64,7 +64,10 @@ function autoLay(id,param){
 						autoHeight =  autoHeight - borderHeight;
 					}
 					if(layHeight == 'auto'){
-						opts['height'] = autoHeight + 'px';
+						// 获取父标签的高度
+						var ph  = $(ele).parent().height();
+						var pbh = getBorderHeight($(ele).parent());
+						opts['height'] = (ph - pbh) + 'px';
 					}else{
 						autoHeight = autoHeight - layHeight;
 						opts['height'] = layHeight + 'px';
@@ -77,7 +80,10 @@ function autoLay(id,param){
 				}
 				if(layWidth){
 					if(layWidth == 'auto'){
-						opts['width'] = autoWidth + 'px';
+						// 获取父标签的高度
+						var pw  = $(ele).parent().width();
+						var pbw = getBorderWidth($(ele).parent());
+						opts['width'] = (pw - pbw) + 'px';
 					}else{
 						autoWidth = autoWidth - layWidth;
 						opts['width'] = layWidth + 'px'; 
